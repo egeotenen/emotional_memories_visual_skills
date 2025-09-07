@@ -4,6 +4,7 @@ data <- read_excel("THESISDATA.xlsx")
 
 install.packages("emmeans") # Estimated marginal means
 install.packages("multcomp") # Multiple comparisons
+install.packages("glmmTMB")
 library(emmeans)
 library(multcomp)
 library(lme4)
