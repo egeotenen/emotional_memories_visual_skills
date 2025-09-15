@@ -1,7 +1,7 @@
 # INSTALL PACKAGES
 library(readxl)
 data <- read_excel("THESISDATA.xlsx")
-
+install.packages("ordinal")
 install.packages("emmeans") # Estimated marginal means
 install.packages("multcomp") # Multiple comparisons
 install.packages("glmmTMB")
@@ -16,7 +16,7 @@ library(glmmTMB)
 install.packages("nlme")
 install.packages("ordinal")
 library(ordinal)
-
+library(performance)
 # 1. FIT THE DISTRIBUTIONS TO FIND BEST GLM MODELS 
 
 # Dependent Variables
@@ -131,6 +131,8 @@ data$ZVVIQ_TOTAL  <- num_from_comma(data$ZVVIQ_TOTAL)
 data$ZMRT_TOTAL <- num_from_comma(data$ZMRT_TOTAL)
 
 data$Emotion_Condition <- as.factor(data$Emotion_Condition)
+# Reference: Neutral condition
+data$Emotion_Condition <- relevel(data$Emotion_Condition, ref='Neutral')
 data$ID <- as.factor(data$ID)
 
 # Optional but helps convergence/interpretation
@@ -138,12 +140,48 @@ data$Object_OSIQ_z  <- scale(data$Object_OSIQ_Factor12item)
 data$Spatial_OSIQ_z <- scale(data$Spatial_OSIQ_Factor14item)
 
 
+# Descriptives
+summary(data$Internal_total)
+sd(data$Internal_total)
 
+summary(data$Vividness)
+sd(data$Vividness)
+
+
+#Based on Emotion Condition
+library(dplyr)
+
+data %>%
+  group_by(Emotion_Condition) %>%
+  summarise(
+    mean_x = mean(Internal_total, na.rm = TRUE),
+    sd_x   = sd(Internal_total, na.rm = TRUE),
+    n      = n()
+  )
+
+
+data %>%
+  group_by(Emotion_Condition) %>%
+  summarise(
+    mean_x = mean(Vividness, na.rm = TRUE),
+    sd_x   = sd(Vividness, na.rm = TRUE),
+    n      = n()
+  )
 
 
 # Models for Memory Details 
 
 # 1. Internal Details
+
+model_null <- glmmTMB(
+  Internal_total ~ Emotion_Condition  + (1 | ID),
+  family = nbinom2,
+  data = data,
+  na.action = na.exclude
+)
+summary(model_null)
+
+
 
 model1 <- glmmTMB(
   Internal_total ~ Emotion_Condition + ZMRT_TOTAL + Spatial_OSIQ_z + (1 | ID),
@@ -153,8 +191,11 @@ model1 <- glmmTMB(
 )
 summary(model1)
 
+anova(model_null,model1)
+compare_performance(model_null,model1)
 
 model2 <- glmmTMB(
+
   Internal_total ~ Emotion_Condition + Object_OSIQ_z + Spatial_OSIQ_z + ZVVIQ_TOTAL + ZMRT_TOTAL+(1 | ID),
   family = nbinom2,
   data = data,
@@ -162,6 +203,14 @@ model2 <- glmmTMB(
 )
 summary(model2)
 
+
+# Compare the models:
+
+# Now compare using anova()
+anova(model1, model2)
+AIC(model1, model2)
+
+compare_performance(model1, model2)
 # 2. Event Details 
 
 model1 <- glmmTMB(
@@ -311,6 +360,16 @@ summary(model2)
 # Random intercept for ID
 # 1. Vividness
 
+model_likert_null <- clmm(
+  as.factor(Vividness) ~ Emotion_Condition +   (1|ID),
+  data = data
+)
+summary(model_likert_null)
+
+anova(model_likert, model_likert_null)
+compare_performance
+
+
 model_likert <- clmm(
   as.factor(Vividness) ~ Emotion_Condition +  Object_OSIQ_z + ZVVIQ_TOTAL + (1|ID),
   data = data
@@ -325,14 +384,21 @@ summary(model_likert2)
 
 anova(model_likert, model_likert2)
 AIC(model_likert, model_likert2)
-
+compare_performance(model_likert,model_likert2)
 #1.1. Vividness with interactions
+
+
+
 
 model_likert <- clmm(
   as.factor(Vividness) ~ Emotion_Condition +  Object_OSIQ_z + ZVVIQ_TOTAL + (1|ID),
   data = data
 )
 summary(model_likert)
+anova(model_likert, model_likert_null)
+AIC(model_likert, model_likert_null)
+
+
 
 model_likert2 <- clmm(
   as.factor(Vividness) ~  Emotion_Condition*ZVVIQ_TOTAL +(1|ID),
