@@ -18,7 +18,7 @@ install.packages("ordinal")
 library(ordinal)
 library(performance)
 # 1. FIT THE DISTRIBUTIONS TO FIND BEST GLM MODELS 
-
+install.packages(dplyr)
 # Dependent Variables
 data$Internal_total
 descdist(data$Internal_total)
@@ -27,6 +27,17 @@ descdist(data$Internal_total)
 library(fitdistrplus)
 library(MASS)
 library(fitdistrplus)
+
+
+
+# Gender Check
+data %>%
+  group_by(ID, Gender) %>%        # group by both ID and Gender
+  summarise(n = n(), .groups="drop") %>%  # count occurrences
+  group_by(Gender) %>%            # now group just by Gender
+  summarise(total = sum(n))
+
+
 
 best_fit_distribution <- function(x,
                                   bounds = NULL,
