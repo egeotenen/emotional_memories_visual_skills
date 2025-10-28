@@ -38,6 +38,35 @@ data %>%
   summarise(total = sum(n))
 
 
+data %>%
+  group_by(ID, Emotion_Condition) %>%        # group by both ID and Gender
+  summarise(n = n(), .groups="drop") %>%  # count occurrences
+  group_by(Emotion_Condition) %>%            # now group just by Gender
+  summarise(total = sum(n))
+
+
+# Test vividness difference among emotional categories
+# --- 1. Descriptive statistics ---
+data %>%
+  group_by(Emotion_Condition) %>%
+  summarise(
+    n = n(),
+    mean_vividness = mean(Vividness, na.rm = TRUE),
+    sd_vividness = sd(Vividness, na.rm = TRUE)
+  )
+
+# --- 2. Check ANOVA assumptions ---
+# Normality of residuals
+anova_model <- aov(Vividness ~ Emotion_Condition, data = data)
+shapiro.test(residuals(anova_model))  # p > .05 means normality is okay
+
+# --- 3. Run one-way ANOVA ---
+anova_result <- aov(Vividness ~ Emotion_Condition, data = data)
+summary(anova_result)
+TukeyHSD(anova_result)
+
+
+
 
 best_fit_distribution <- function(x,
                                   bounds = NULL,
