@@ -17,6 +17,9 @@ install.packages("nlme")
 install.packages("ordinal")
 library(ordinal)
 library(performance)
+
+library(ordinal); library(ggplot2); library(dplyr); library(tidyr)
+
 # 1. FIT THE DISTRIBUTIONS TO FIND BEST GLM MODELS 
 install.packages(dplyr)
 # Dependent Variables
@@ -189,7 +192,7 @@ sd(data$Vividness)
 
 
 #Based on Emotion Condition
-library(dplyr)
+
 
 data %>%
   group_by(Emotion_Condition) %>%
@@ -210,6 +213,60 @@ data %>%
 
 
 # Models for Memory Details 
+
+# Visualize Internal Details
+library(ggplot2)
+library(dplyr)
+
+summary_df <- data %>%
+  group_by(Emotion_Condition) %>%
+  summarise(
+    mean_internal = mean(Internal_total, na.rm = TRUE),
+    se = sd(Internal_total, na.rm = TRUE) / sqrt(n()),
+    n = n()
+  )
+
+ggplot(data, aes(x = Emotion_Condition, y = Internal_total, color = Emotion_Condition)) +
+  geom_jitter(width = 0.15, alpha = 0.3, size = 1) +
+  geom_point(data = summary_df,
+             aes(x = Emotion_Condition, y = mean_internal),
+             inherit.aes = FALSE, color = "black", size = 3) +
+  geom_errorbar(data = summary_df,
+                aes(x = Emotion_Condition,
+                    ymin = mean_internal - 1.96 * se,
+                    ymax = mean_internal + 1.96 * se),
+                inherit.aes = FALSE, width = 0.1, color = "black") +
+  labs(title = "Mean Number of Internal Details by Emotion Condition",
+       x = "Emotion Condition", y = "Internal Details (Mean ± 95% CI)") +
+  theme_minimal(base_size = 13) +
+  theme(legend.position = "none")
+
+
+# Visualize Vividness 
+
+summary_df <- data %>%
+  group_by(Emotion_Condition) %>%
+  summarise(
+    mean_vividness = mean(Vividness, na.rm = TRUE),
+    se = sd(Vividness, na.rm = TRUE) / sqrt(n()),
+    n = n()
+  )
+
+ggplot(data, aes(x = Emotion_Condition, y = Vividness, color = Emotion_Condition)) +
+  geom_jitter(width = 0.15, alpha = 0.3, size = 1) +
+  geom_point(data = summary_df,
+             aes(x = Emotion_Condition, y = mean_vividness),
+             inherit.aes = FALSE, color = "black", size = 3) +
+  geom_errorbar(data = summary_df,
+                aes(x = Emotion_Condition,
+                    ymin = mean_vividness - 1.96 * se,
+                    ymax = mean_vividness + 1.96 * se),
+                inherit.aes = FALSE, width = 0.1, color = "black") +
+  labs(title = "Mean Vividness Ratings by Emotion Condition",
+       x = "Emotion Condition", y = "Vividness Ratings (Mean ± 95% CI)") +
+  theme_minimal(base_size = 13) +
+  theme(legend.position = "none")
+
 
 # 1. Internal Details
 
@@ -234,6 +291,7 @@ summary(model1)
 anova(model_null,model1)
 compare_performance(model_null,model1)
 
+
 model2 <- glmmTMB(
 
   Internal_total ~ Emotion_Condition + Object_OSIQ_z + Spatial_OSIQ_z + ZVVIQ_TOTAL + ZMRT_TOTAL+(1 | ID),
@@ -251,6 +309,9 @@ anova(model1, model2)
 AIC(model1, model2)
 
 compare_performance(model1, model2)
+
+
+
 # 2. Event Details 
 
 model1 <- glmmTMB(
@@ -416,6 +477,7 @@ model_likert <- clmm(
 )
 summary(model_likert)
 
+
 model_likert2 <- clmm(
   as.factor(Vividness) ~ Emotion_Condition +  Object_OSIQ_z + Spatial_OSIQ_z + ZVVIQ_TOTAL + ZMRT_TOTAL+(1|ID),
   data = data
@@ -425,29 +487,20 @@ summary(model_likert2)
 anova(model_likert, model_likert2)
 AIC(model_likert, model_likert2)
 compare_performance(model_likert,model_likert2)
+
+
 #1.1. Vividness with interactions
-
-
-
-
-model_likert <- clmm(
-  as.factor(Vividness) ~ Emotion_Condition +  Object_OSIQ_z + ZVVIQ_TOTAL + (1|ID),
-  data = data
-)
-summary(model_likert)
-anova(model_likert, model_likert_null)
-AIC(model_likert, model_likert_null)
-
-
-
 model_likert2 <- clmm(
-  as.factor(Vividness) ~  Emotion_Condition*ZVVIQ_TOTAL +(1|ID),
+  as.factor(Vividness) ~  Emotion_Condition*ZVVIQ_TOTAL +Emotion_Condition*Object_OSIQ_z  +(1|ID),
   data = data
 )
 summary(model_likert2)
 
 anova(model_likert, model_likert2)
 AIC(model_likert, model_likert2)
+
+
+#Visualization of Interaction Effect
 
 
 # 2. Reliving
