@@ -17,6 +17,12 @@ install.packages("nlme")
 install.packages("ordinal")
 library(ordinal)
 library(performance)
+# install.packages(c("fitdistrplus","MASS")) # if needed
+library(fitdistrplus)
+library(MASS)
+library(fitdistrplus)
+install.packages("psych")
+library(psych)
 
 library(ordinal); library(ggplot2); library(dplyr); library(tidyr)
 
@@ -26,10 +32,21 @@ install.packages(dplyr)
 data$Internal_total
 descdist(data$Internal_total)
 
-# install.packages(c("fitdistrplus","MASS")) # if needed
-library(fitdistrplus)
-library(MASS)
-library(fitdistrplus)
+
+
+# Remove outliers in internal 
+# Compute IQR boundaries
+#Q1 <- quantile(data$Internal_total, 0.25, na.rm = TRUE)
+#Q3 <- quantile(data$Internal_total, 0.75, na.rm = TRUE)
+#IQR_value <- Q3 - Q1
+
+# Define lower and upper bounds
+#lower_bound <- Q1 - 1.5 * IQR_value
+#upper_bound <- Q3 + 1.5 * IQR_value
+
+# Filter out the outliers
+#data <- data[data$Internal_total >= lower_bound & data$Internal_total <= upper_bound, ]
+#data$Internal_total
 
 
 
@@ -46,6 +63,53 @@ data %>%
   summarise(n = n(), .groups="drop") %>%  # count occurrences
   group_by(Emotion_Condition) %>%            # now group just by Gender
   summarise(total = sum(n))
+
+
+#Manipulation checks
+df_summary <- data %>%
+  group_by(Emotion_Condition) %>%
+  summarise(
+    n = n(),
+    mean_valence = mean(Valence_Check, na.rm = TRUE),
+    median_valence = median(Valence_Check, na.rm = TRUE),
+    sd_valence = sd(Valence_Check, na.rm = TRUE),
+    min_valence = min(Valence_Check, na.rm = TRUE),
+    max_valence = max(Valence_Check, na.rm = TRUE)
+  )
+
+print(df_summary)
+
+
+#Arousal
+df_summary <- data %>%
+  group_by(Emotion_Condition) %>%
+  summarise(
+    n = n(),
+    mean_valence = mean(Arousal_Check, na.rm = TRUE),
+    median_valence = median(Arousal_Check, na.rm = TRUE),
+    sd_valence = sd(Arousal_Check, na.rm = TRUE),
+    min_valence = min(Arousal_Check, na.rm = TRUE),
+    max_valence = max(Arousal_Check, na.rm = TRUE)
+  )
+
+print(df_summary)
+
+
+# Correlation of Metrics
+
+var_list <- c("ZMRT_TOTAL", "ZVVIQ_TOTAL", "ZSpatial_OSIQ", "ZObject_OSIQ")
+df_num <- data[, var_list]  # subset first
+
+df_num <- data.frame(lapply(df_num, function(x) {
+  x <- as.character(x)
+  x[x %in% c("", "NA", "N/A", "NaN", ".", "nan")] <- NA  # treat weird entries as NA
+  suppressWarnings(as.numeric(x))
+}))
+df_num
+corr_result <- corr.test(df_num[, var_list], method = "kendall")
+corr_result$r     # correlation coefficients
+corr_result$p     # p-values
+
 
 
 # Test vividness difference among emotional categories
@@ -154,12 +218,12 @@ best_fit_distribution <- function(x,
 }
 
 # Test the distribution fits for memory details--> all fit to nbinom
-res_cont <- best_fit_distribution(data$External, bounds = c(0,40))
+res_cont <- best_fit_distribution(data$Internal_total, bounds = c(0,23))
 res_cont$recommended
 res_cont$table
 
 #Test the distribution for memory ratings
-descdist(data$edint)
+descdist(data$Internal_total)
 
 ###############################################################################
 
