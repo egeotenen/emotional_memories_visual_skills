@@ -95,6 +95,50 @@ df_summary <- data %>%
 print(df_summary)
 
 
+# Correlation of Metrics
+
+var_list <- c("ZMRT_TOTAL", "ZVVIQ_TOTAL", "ZSpatial_OSIQ", "ZObject_OSIQ")
+
+df_num <- data[, var_list]  # subset first
+
+df_num[] <- lapply(df_num, function(x) {
+  if (is.character(x)) {
+    # Replace comma with dot, then convert
+    as.numeric(gsub(",", ".", x))
+  } else {
+    x  # keep as is
+  }
+})
+
+
+df_num[] <- lapply(df_num, function(x) {
+  if (is.factor(x) || is.character(x)) {
+    as.numeric(gsub(",", ".", as.character(x)))
+  } else {
+    x
+  }
+})
+
+df_num <- data[!duplicated(data$ID), var_list]
+
+
+# Correlations
+corr <- rcorr.test(df_num, method = "pearson")
+
+# --- 4️⃣ Extract and round results ---
+r_values <- round(corr$r, 3)      # Kendall tau correlations
+p_values   <- round(corr$p, 4)      # p-values
+n_values   <- corr$n                # sample sizes for each pair
+
+# --- 5️⃣ Print neatly ---
+cat("\n✅ Pearson's r Correlation Matrix:\n")
+print(r_values)
+
+cat("\n📊 Corresponding p-values:\n")
+print(p_values)
+
+print(n_values)
+
 # Test vividness difference among emotional categories
 # --- 1. Descriptive statistics ---
 data %>%
