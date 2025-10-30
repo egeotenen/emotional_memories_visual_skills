@@ -95,23 +95,6 @@ df_summary <- data %>%
 print(df_summary)
 
 
-# Correlation of Metrics
-
-var_list <- c("ZMRT_TOTAL", "ZVVIQ_TOTAL", "ZSpatial_OSIQ", "ZObject_OSIQ")
-df_num <- data[, var_list]  # subset first
-
-df_num <- data.frame(lapply(df_num, function(x) {
-  x <- as.character(x)
-  x[x %in% c("", "NA", "N/A", "NaN", ".", "nan")] <- NA  # treat weird entries as NA
-  suppressWarnings(as.numeric(x))
-}))
-df_num
-corr_result <- corr.test(df_num[, var_list], method = "kendall")
-corr_result$r     # correlation coefficients
-corr_result$p     # p-values
-
-
-
 # Test vividness difference among emotional categories
 # --- 1. Descriptive statistics ---
 data %>%
