@@ -9,6 +9,7 @@ library(emmeans)
 library(multcomp)
 library(lme4)
 library(nlme)
+library(Hmisc)
 library(MASS)
 library(survival)
 library(fitdistrplus)
@@ -50,8 +51,16 @@ descdist(data$Internal_total)
 
 
 
+df_unique <- data %>%
+  distinct(ID, .keep_all = TRUE) 
+
+describe(df_unique$Age)
+min(df_unique$Age)
+max(df_unique$Age)
+sd(df_unique$Age)
+
 # Gender Check
-data %>%
+df_unique %>%
   group_by(ID, Gender) %>%        # group by both ID and Gender
   summarise(n = n(), .groups="drop") %>%  # count occurrences
   group_by(Gender) %>%            # now group just by Gender
@@ -558,7 +567,7 @@ model_likert_null <- clmm(
 )
 summary(model_likert_null)
 
-anova(model_likert, model_likert_null)
+ anova(model_likert, model_likert_null)
 compare_performance
 
 
