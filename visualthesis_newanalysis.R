@@ -1,10 +1,15 @@
 # INSTALL PACKAGES
-library(readxl)
-data <- read_excel("THESISDATA.xlsx")
 install.packages("ordinal")
 install.packages("emmeans") # Estimated marginal means
 install.packages("multcomp") # Multiple comparisons
 install.packages("glmmTMB")
+install.packages("nlme")
+install.packages("ordinal")
+install.packages("psych")
+install.packages('dplyr')
+
+
+library(readxl)
 library(emmeans)
 library(multcomp)
 library(lme4)
@@ -14,21 +19,19 @@ library(MASS)
 library(survival)
 library(fitdistrplus)
 library(glmmTMB)
-install.packages("nlme")
-install.packages("ordinal")
 library(ordinal)
 library(performance)
 # install.packages(c("fitdistrplus","MASS")) # if needed
 library(fitdistrplus)
 library(MASS)
 library(fitdistrplus)
-install.packages("psych")
 library(psych)
-
 library(ordinal); library(ggplot2); library(dplyr); library(tidyr)
 
+data <- read_excel("THESISDATA.xlsx")
+
+
 # 1. FIT THE DISTRIBUTIONS TO FIND BEST GLM MODELS 
-install.packages(dplyr)
 # Dependent Variables
 data$Internal_total
 descdist(data$Internal_total)
@@ -49,7 +52,18 @@ descdist(data$Internal_total)
 #data <- data[data$Internal_total >= lower_bound & data$Internal_total <= upper_bound, ]
 #data$Internal_total
 
+#Arousal
+df_summary <- data %>%
+  summarise(
+    n = n(),
+    mean_valence = mean(Internal_total, na.rm = TRUE),
+    median_valence = median(Internal_total, na.rm = TRUE),
+    sd_valence = sd(Internal_total, na.rm = TRUE),
+    min_valence = min(Internal_total, na.rm = TRUE),
+    max_valence = max(Internal_total, na.rm = TRUE)
+  )
 
+print(df_summary)
 
 df_unique <- data %>%
   distinct(ID, .keep_all = TRUE) 
@@ -566,8 +580,13 @@ model_likert_null <- clmm(
   data = data
 )
 summary(model_likert_null)
+em <- emmeans(model_likert_null, ~  Emotion_Condition)
+pairwise_part <- contrast(em, method = "pairwise")
+print(pairwise_part)
 
- anova(model_likert, model_likert_null)
+
+
+anova(model_likert, model_likert_null)
 compare_performance
 
 
