@@ -481,6 +481,13 @@ summary(model1)
 anova(model_null,model1)
 compare_performance(model_null,model1)
 
+install.packages("performance")
+install.packages("parameters")
+install.packages("insight")
+
+check_collinearity(model1)
+
+
 
 model2 <- glmmTMB(
 
@@ -490,6 +497,7 @@ model2 <- glmmTMB(
   na.action = na.exclude
 )
 summary(model2)
+check_collinearity(model2)
 
 
 # Compare the models:
@@ -673,11 +681,11 @@ model_likert <- clmm(
 summary(model_likert)
 
 
-model_likert2 <- clmm(
+model_likert1 <- clmm(
   as.factor(Vividness) ~ Emotion_Condition +  Object_OSIQ_z + Spatial_OSIQ_z + ZVVIQ_TOTAL + ZMRT_TOTAL+(1|ID),
   data = data
 )
-summary(model_likert2)
+summary(model_likert1)
 
 anova(model_likert, model_likert2)
 AIC(model_likert, model_likert2)
@@ -695,9 +703,11 @@ anova(model_likert, model_likert2)
 AIC(model_likert, model_likert2)
 
 
-#Visualization of Interaction Effect
+#multicollineraity check
+# Create interaction terms explicitly
+check_collinearity(model_likert)
 
-
+#############################################################
 # 2. Reliving
 model_likert <- clmm(
   as.factor(Reliving) ~ Emotion_Condition +  Object_OSIQ_z + ZVVIQ_TOTAL + (1|ID),
