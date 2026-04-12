@@ -143,10 +143,15 @@ df_num[] <- lapply(df_num, function(x) {
 })
 
 df_num <- data[!duplicated(data$ID), var_list]
+df_num[] <- lapply(df_num, function(x) {
+  as.numeric(gsub(",", ".", as.character(x)))
+})
+
 
 
 # Correlations
-corr <- rcorr.test(df_num, method = "pearson")
+corr <- corr.test(df_num, method = "pearson")
+
 
 # --- 4️⃣ Extract and round results ---
 r_values <- round(corr$r, 3)      # Kendall tau correlations
@@ -161,6 +166,77 @@ cat("\n📊 Corresponding p-values:\n")
 print(p_values)
 
 print(n_values)
+
+
+
+## FOR DETAILS AND MEASURES
+var_list <- c("ZMRT_TOTAL", "ZVVIQ_TOTAL", "ZSpatial_OSIQ", "ZObject_OSIQ", "Internal_total")
+
+df_num <- data[, var_list]  # subset first
+
+
+df_num[] <- lapply(df_num, function(x) {
+  if (is.character(x)) {
+    # Replace comma with dot, then convert
+    as.numeric(gsub(",", ".", x))
+  } else {
+    x  # keep as is
+  }
+})
+
+
+df_num[] <- lapply(df_num, function(x) {
+  if (is.factor(x) || is.character(x)) {
+    as.numeric(gsub(",", ".", as.character(x)))
+  } else {
+    x
+  }
+})
+
+df_num <- data[!duplicated(data$ID), var_list]
+df_num[] <- lapply(df_num, function(x) {
+  as.numeric(gsub(",", ".", as.character(x)))
+})
+
+
+
+# Correlations
+corr <- corr.test(df_num, method = "pearson")
+
+
+# --- 4️⃣ Extract and round results ---
+r_values <- round(corr$r, 3)      # Kendall tau correlations
+p_values   <- round(corr$p, 4)      # p-values
+n_values   <- corr$n                # sample sizes for each pair
+
+# --- 5️⃣ Print neatly ---
+cat("\n✅ Pearson's r Correlation Matrix:\n")
+print(r_values)
+
+cat("\n📊 Corresponding p-values:\n")
+print(p_values)
+
+
+#install.packages("corrplot")
+library(corrplot)
+
+# Basic
+corrplot(corr$r_values, method = "circle")
+
+# More publication-ready
+corrplot(corr$r, 
+         method = "color",        # colored squares
+         type = "upper",          # upper triangle only
+         tl.col = "black",        # label color
+         tl.srt = 45,             # label angle
+         addCoef.col = "black",   # add correlation numbers
+         number.cex = 0.7,        # number size
+         p.mat = corr$p,          # add significance
+         sig.level = 0.05,        # cross out non-significant
+         insig = "blank")         # hide non-significant
+
+
+
 
 # Test vividness difference among emotional categories
 # --- 1. Descriptive statistics ---
@@ -350,8 +426,8 @@ ggplot(data, aes(x = Emotion_Condition, y = Internal_total, color = Emotion_Cond
                     ymin = mean_internal - 1.96 * se,
                     ymax = mean_internal + 1.96 * se),
                 inherit.aes = FALSE, width = 0.1, color = "black") +
-  labs(title = "Mean Number of Internal Details by Emotion Condition",
-       x = "Emotion Condition", y = "Internal Details (Mean ± 95% CI)") +
+  labs(title = "Mean Number of Episodic Details by Emotion Condition",
+       x = "Emotion Condition", y = "Episodic Details (Mean ± 95% CI)") +
   theme_minimal(base_size = 13) +
   theme(legend.position = "none")
 
