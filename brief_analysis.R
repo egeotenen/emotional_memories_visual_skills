@@ -32,27 +32,13 @@ data <- read_excel("THESISDATA.xlsx")
 
 
 # 1. FIT THE DISTRIBUTIONS TO FIND BEST GLM MODELS 
+
 # Dependent Variables
 data$Internal_total
 descdist(data$Internal_total)
 
 
-
-# Remove outliers in internal 
-# Compute IQR boundaries
-#Q1 <- quantile(data$Internal_total, 0.25, na.rm = TRUE)
-#Q3 <- quantile(data$Internal_total, 0.75, na.rm = TRUE)
-#IQR_value <- Q3 - Q1
-
-# Define lower and upper bounds
-#lower_bound <- Q1 - 1.5 * IQR_value
-#upper_bound <- Q3 + 1.5 * IQR_value
-
-# Filter out the outliers
-#data <- data[data$Internal_total >= lower_bound & data$Internal_total <= upper_bound, ]
-#data$Internal_total
-
-#Arousal
+#Descriptives
 df_summary <- data %>%
   summarise(
     n = n(),
@@ -118,8 +104,279 @@ df_summary <- data %>%
 print(df_summary)
 
 
-# Correlation of Metrics
+###################################
+# Wilcoxon Tests for Manipulations
+library(dplyr)
+library(tidyr)
 
+
+
+
+# Get mean valence for each emotion condition
+#Arousal
+df_summary <- data %>%
+  group_by(Emotion_Condition) %>%
+  summarise(
+    n = n(),
+    mean_valence = mean(Arousal_Check, na.rm = TRUE),
+    median_valence = median(Arousal_Check, na.rm = TRUE),
+    sd_valence = sd(Arousal_Check, na.rm = TRUE),
+    min_valence = min(Arousal_Check, na.rm = TRUE),
+    max_valence = max(Arousal_Check, na.rm = TRUE)
+  )
+
+print(df_summary)
+
+
+# Wilcoxon Tests for Manipulations
+# 1. Get mean arousal for each emotion condition
+wide_data <- data %>%
+  filter(
+    Emotion_Condition %in% c("Neutral", "Negative", "Positive"),
+    !is.na(Valence_Check)
+  ) %>%
+  group_by(ID, Emotion_Condition) %>%
+  summarise(
+    Valence_Check = mean(Valence_Check),
+    .groups = "drop"
+  ) %>%
+  pivot_wider(
+    names_from = Emotion_Condition,
+    values_from = Valence_Check
+  )
+
+# Apply Wilcoxon
+test_neutral_negative <- wilcox.test(
+  wide_data$Neutral,
+  wide_data$Negative,
+  paired = TRUE,
+  exact = FALSE
+)
+
+test_neutral_positive <- wilcox.test(
+  wide_data$Neutral,
+  wide_data$Positive,
+  paired = TRUE,
+  exact = FALSE
+)
+test_negative_positive <- wilcox.test(
+  wide_data$Negative,
+  wide_data$Positive,
+  paired = TRUE,
+  exact = FALSE
+)
+
+results <- data.frame(
+  comparison = c(
+    "Neutral vs Negative",
+    "Neutral vs Positive",
+    "Negative vs. Positive"
+  ),
+  W = c(
+    unname(test_neutral_negative$statistic),
+    unname(test_neutral_positive$statistic),
+    unname(test_negative_positive$statistic)
+  ),
+  p = c(
+    test_neutral_negative$p.value,
+    test_neutral_positive$p.value,
+    test_negative_positive$p.value
+  )
+) %>%
+  mutate(
+    p_bonf = p.adjust(p, method = "bonferroni")
+  )
+
+
+results <- results %>%
+  mutate(
+    p_exact_3dp = sprintf("%.3f", p),
+    p_adjusted_exact_3dp = sprintf("%.3f", p_bonf)
+  )
+results
+
+# Get z scores
+library(coin)
+
+# Neutral vs Negative
+test_NN <- wilcoxsign_test(
+  Neutral ~ Negative,
+  data = wide_data,
+  distribution = "asymptotic"
+)
+
+Z_NN <- statistic(test_NN, type = "standardized")
+Z_NN
+
+# Neutral vs Positive
+test_NP <- wilcoxsign_test(
+  Neutral ~ Positive,
+  data = wide_data,
+  distribution = "asymptotic"
+)
+
+Z_NP <- statistic(test_NP, type = "standardized")
+Z_NP
+
+# Negative vs Positive
+test_NP <- wilcoxsign_test(
+  Negative ~ Positive,
+  data = wide_data,
+  distribution = "asymptotic"
+)
+
+Z_NP <- statistic(test_NP, type = "standardized")
+Z_NP
+
+
+# Get the number of pairs
+N_pos_neu <- sum(complete.cases(
+  wide_data$Positive,
+  wide_data$Neutral
+))
+
+N_neg_neu <- sum(complete.cases(
+  wide_data$Negative,
+  wide_data$Neutral
+))
+
+N_pos_neg <- sum(complete.cases(
+  wide_data$Positive,
+  wide_data$Negative
+))
+
+N_pos_neu
+N_neg_neu
+N_pos_neg
+
+
+
+# 2. Get mean arousal for each emotion condition
+wide_data <- data %>%
+  filter(
+    Emotion_Condition %in% c("Neutral", "Negative", "Positive"),
+    !is.na(Arousal_Check)
+  ) %>%
+  group_by(ID, Emotion_Condition) %>%
+  summarise(
+    Arousal_Check = mean(Arousal_Check),
+    .groups = "drop"
+  ) %>%
+  pivot_wider(
+    names_from = Emotion_Condition,
+    values_from = Arousal_Check
+  )
+
+# Apply Wilcoxon
+test_neutral_negative <- wilcox.test(
+  wide_data$Neutral,
+  wide_data$Negative,
+  paired = TRUE,
+  exact = FALSE
+)
+
+test_neutral_positive <- wilcox.test(
+  wide_data$Neutral,
+  wide_data$Positive,
+  paired = TRUE,
+  exact = FALSE
+)
+test_negative_positive <- wilcox.test(
+  wide_data$Negative,
+  wide_data$Positive,
+  paired = TRUE,
+  exact = FALSE
+)
+
+results <- data.frame(
+  comparison = c(
+    "Neutral vs Negative",
+    "Neutral vs Positive",
+    "Negative vs. Positive"
+  ),
+  W = c(
+    unname(test_neutral_negative$statistic),
+    unname(test_neutral_positive$statistic),
+    unname(test_negative_positive$statistic)
+  ),
+  p = c(
+    test_neutral_negative$p.value,
+    test_neutral_positive$p.value,
+    test_negative_positive$p.value
+  )
+) %>%
+  mutate(
+    p_bonf = p.adjust(p, method = "bonferroni")
+  )
+
+
+results <- results %>%
+  mutate(
+    p_exact_3dp = sprintf("%.3f", p),
+    p_adjusted_exact_3dp = sprintf("%.3f", p_bonf)
+  )
+results
+
+# Get z scores
+library(coin)
+
+# Neutral vs Negative
+test_NN <- wilcoxsign_test(
+  Neutral ~ Negative,
+  data = wide_data,
+  distribution = "asymptotic"
+)
+
+Z_NN <- statistic(test_NN, type = "standardized")
+Z_NN
+
+# Neutral vs Positive
+test_NP <- wilcoxsign_test(
+  Neutral ~ Positive,
+  data = wide_data,
+  distribution = "asymptotic"
+)
+
+Z_NP <- statistic(test_NP, type = "standardized")
+Z_NP
+
+# Negative vs Positive
+test_NP <- wilcoxsign_test(
+  Negative ~ Positive,
+  data = wide_data,
+  distribution = "asymptotic"
+)
+
+Z_NP <- statistic(test_NP, type = "standardized")
+Z_NP
+
+# get the number of pairs
+N_pos_neu <- sum(complete.cases(
+  wide_data$Positive,
+  wide_data$Neutral
+))
+
+N_neg_neu <- sum(complete.cases(
+  wide_data$Negative,
+  wide_data$Neutral
+))
+
+N_pos_neg <- sum(complete.cases(
+  wide_data$Positive,
+  wide_data$Negative
+))
+
+N_pos_neu
+N_neg_neu
+N_pos_neg
+
+###############################################################
+
+#Vividness
+describe(data$Vividness)
+
+
+# Correlation of Metrics
 var_list <- c("ZMRT_TOTAL", "ZVVIQ_TOTAL", "ZSpatial_OSIQ", "ZObject_OSIQ")
 
 df_num <- data[, var_list]  # subset first
@@ -147,74 +404,9 @@ df_num[] <- lapply(df_num, function(x) {
   as.numeric(gsub(",", ".", as.character(x)))
 })
 
-
-
 # Correlations
 corr <- corr.test(df_num, method = "pearson")
-
-
-# --- 4️⃣ Extract and round results ---
-r_values <- round(corr$r, 3)      # Kendall tau correlations
-p_values   <- round(corr$p, 4)      # p-values
-n_values   <- corr$n                # sample sizes for each pair
-
-# --- 5️⃣ Print neatly ---
-cat("\n✅ Pearson's r Correlation Matrix:\n")
-print(r_values)
-
-cat("\n📊 Corresponding p-values:\n")
-print(p_values)
-
-print(n_values)
-
-
-
-## FOR DETAILS AND MEASURES
-var_list <- c("ZMRT_TOTAL", "ZVVIQ_TOTAL", "ZSpatial_OSIQ", "ZObject_OSIQ", "Internal_total")
-
-df_num <- data[, var_list]  # subset first
-
-
-df_num[] <- lapply(df_num, function(x) {
-  if (is.character(x)) {
-    # Replace comma with dot, then convert
-    as.numeric(gsub(",", ".", x))
-  } else {
-    x  # keep as is
-  }
-})
-
-
-df_num[] <- lapply(df_num, function(x) {
-  if (is.factor(x) || is.character(x)) {
-    as.numeric(gsub(",", ".", as.character(x)))
-  } else {
-    x
-  }
-})
-
-df_num <- data[!duplicated(data$ID), var_list]
-df_num[] <- lapply(df_num, function(x) {
-  as.numeric(gsub(",", ".", as.character(x)))
-})
-
-
-
-# Correlations
-corr <- corr.test(df_num, method = "pearson")
-
-
-# --- 4️⃣ Extract and round results ---
-r_values <- round(corr$r, 3)      # Kendall tau correlations
-p_values   <- round(corr$p, 4)      # p-values
-n_values   <- corr$n                # sample sizes for each pair
-
-# --- 5️⃣ Print neatly ---
-cat("\n✅ Pearson's r Correlation Matrix:\n")
-print(r_values)
-
-cat("\n📊 Corresponding p-values:\n")
-print(p_values)
+rcorr(as.matrix(df_num))
 
 
 #install.packages("corrplot")
@@ -234,8 +426,6 @@ corrplot(corr$r,
          p.mat = corr$p,          # add significance
          sig.level = 0.05,        # cross out non-significant
          insig = "blank")         # hide non-significant
-
-
 
 
 # Test vividness difference among emotional categories
@@ -490,7 +680,7 @@ check_collinearity(model1)
 
 
 model2 <- glmmTMB(
-
+  
   Internal_total ~ Emotion_Condition + Object_OSIQ_z + Spatial_OSIQ_z + ZVVIQ_TOTAL + ZMRT_TOTAL+(1 | ID),
   family = nbinom2,
   data = data,
