@@ -35,11 +35,12 @@ library(ordinal)
 library(coin)
 library(ggplot2)
 
+
+
 # IMPORT DATA
-data <- read_excel("THESISDATA.xlsx")
+data <- read_excel("data_osf.xlsx")
 
 
-# FIT THE DISTRIBUTIONS TO FIND BEST GLM MODELS 
 
 
 # CHECK DATA FIRST
