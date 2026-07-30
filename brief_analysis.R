@@ -8,7 +8,8 @@ install.packages("ordinal")
 install.packages("psych")
 install.packages('dplyr')
 
-
+library(dplyr)
+library(tidyr)
 library(readxl)
 library(emmeans)
 library(multcomp)
@@ -26,13 +27,18 @@ library(fitdistrplus)
 library(MASS)
 library(fitdistrplus)
 library(psych)
-library(ordinal); library(ggplot2); library(dplyr); library(tidyr)
+library(ordinal)
+library(coin)
+library(ggplot2)
 
+# IMPORT DATA
 data <- read_excel("THESISDATA.xlsx")
 
 
-# 1. FIT THE DISTRIBUTIONS TO FIND BEST GLM MODELS 
+# FIT THE DISTRIBUTIONS TO FIND BEST GLM MODELS 
 
+
+# CHECK DATA FIRST
 # Dependent Variables
 data$Internal_total
 descdist(data$Internal_total)
@@ -74,7 +80,11 @@ data %>%
   summarise(total = sum(n))
 
 
+###################################
+##### MANIPULATION CHECKS ########
+
 #Manipulation checks
+# Valence
 df_summary <- data %>%
   group_by(Emotion_Condition) %>%
   summarise(
@@ -104,32 +114,8 @@ df_summary <- data %>%
 print(df_summary)
 
 
-###################################
 # Wilcoxon Tests for Manipulations
-library(dplyr)
-library(tidyr)
-
-
-
-
-# Get mean valence for each emotion condition
-#Arousal
-df_summary <- data %>%
-  group_by(Emotion_Condition) %>%
-  summarise(
-    n = n(),
-    mean_valence = mean(Arousal_Check, na.rm = TRUE),
-    median_valence = median(Arousal_Check, na.rm = TRUE),
-    sd_valence = sd(Arousal_Check, na.rm = TRUE),
-    min_valence = min(Arousal_Check, na.rm = TRUE),
-    max_valence = max(Arousal_Check, na.rm = TRUE)
-  )
-
-print(df_summary)
-
-
-# Wilcoxon Tests for Manipulations
-# 1. Get mean arousal for each emotion condition
+# 1. Get mean valence for each emotion condition
 wide_data <- data %>%
   filter(
     Emotion_Condition %in% c("Neutral", "Negative", "Positive"),
@@ -196,7 +182,6 @@ results <- results %>%
 results
 
 # Get z scores
-library(coin)
 
 # Neutral vs Negative
 test_NN <- wilcoxsign_test(
@@ -318,7 +303,6 @@ results <- results %>%
 results
 
 # Get z scores
-library(coin)
 
 # Neutral vs Negative
 test_NN <- wilcoxsign_test(
@@ -371,10 +355,8 @@ N_neg_neu
 N_pos_neg
 
 ###############################################################
-
-#Vividness
-describe(data$Vividness)
-
+### CORRELATIONS ####
+###############################################################
 
 # Correlation of Metrics
 var_list <- c("ZMRT_TOTAL", "ZVVIQ_TOTAL", "ZSpatial_OSIQ", "ZObject_OSIQ")
@@ -428,6 +410,7 @@ corrplot(corr$r,
          insig = "blank")         # hide non-significant
 
 
+#############################################################################
 # Test vividness difference among emotional categories
 # --- 1. Descriptive statistics ---
 data %>%
@@ -449,7 +432,9 @@ summary(anova_result)
 TukeyHSD(anova_result)
 
 
-
+###########################################################################
+### FIND BEST FITTING GLM MODEL 
+###########################################################################
 
 best_fit_distribution <- function(x,
                                   bounds = NULL,
@@ -572,8 +557,6 @@ sd(data$Vividness)
 
 
 #Based on Emotion Condition
-
-
 data %>%
   group_by(Emotion_Condition) %>%
   summarise(
@@ -593,10 +576,8 @@ data %>%
 
 
 # Models for Memory Details 
-
 # Visualize Internal Details
-library(ggplot2)
-library(dplyr)
+
 
 summary_df <- data %>%
   group_by(Emotion_Condition) %>%
@@ -623,7 +604,6 @@ ggplot(data, aes(x = Emotion_Condition, y = Internal_total, color = Emotion_Cond
 
 
 # Visualize Vividness 
-
 summary_df <- data %>%
   group_by(Emotion_Condition) %>%
   summarise(
@@ -650,6 +630,7 @@ ggplot(data, aes(x = Emotion_Condition, y = Vividness, color = Emotion_Condition
 
 # 1. Internal Details
 
+# BASELINE MODEL (See in Appendix)
 model_null <- glmmTMB(
   Internal_total ~ Emotion_Condition  + (1 | ID),
   family = nbinom2,
@@ -659,7 +640,7 @@ model_null <- glmmTMB(
 summary(model_null)
 
 
-
+# MODEL 1 
 model1 <- glmmTMB(
   Internal_total ~ Emotion_Condition + ZMRT_TOTAL + Spatial_OSIQ_z + (1 | ID),
   family = nbinom2,
@@ -679,8 +660,8 @@ check_collinearity(model1)
 
 
 
+# MODEL 2 
 model2 <- glmmTMB(
-  
   Internal_total ~ Emotion_Condition + Object_OSIQ_z + Spatial_OSIQ_z + ZVVIQ_TOTAL + ZMRT_TOTAL+(1 | ID),
   family = nbinom2,
   data = data,
@@ -698,157 +679,15 @@ AIC(model1, model2)
 
 compare_performance(model1, model2)
 
-
-
-# 2. Event Details 
-
-model1 <- glmmTMB(
-  edint ~ Emotion_Condition + ZMRT_TOTAL + Spatial_OSIQ_z + (1 | ID),
-  family = nbinom2,
-  data = data,
-  na.action = na.exclude
-)
-summary(model1)
-
-
-model2 <- glmmTMB(
-  edint ~ Emotion_Condition + Object_OSIQ_z + Spatial_OSIQ_z + ZVVIQ_TOTAL + ZMRT_TOTAL+(1 | ID),
-  family = nbinom2,
-  data = data,
-  na.action = na.exclude
-)
-summary(model2)
-
-# 3. Perceptual Details 
-
-model1 <- glmmTMB(
-  percint ~ Emotion_Condition + ZMRT_TOTAL + Spatial_OSIQ_z + (1 | ID),
-  family = nbinom2,
-  data = data,
-  na.action = na.exclude
-)
-summary(model1)
-
-
-model2 <- glmmTMB(
-  percint ~ Emotion_Condition + Object_OSIQ_z + Spatial_OSIQ_z + ZVVIQ_TOTAL + ZMRT_TOTAL+(1 | ID),
-  family = nbinom2,
-  data = data,
-  na.action = na.exclude
-)
-summary(model2)
-
-
-# Now compare using anova()
-anova(model1, model2)
-AIC(model1, model2)
-
-
-# 4. Time
-model1 <- glmmTMB(
-  tint ~ Emotion_Condition + ZMRT_TOTAL + Spatial_OSIQ_z + (1 | ID),
-  family = nbinom2,
-  data = data,
-  na.action = na.exclude
-)
-summary(model1)
-
-
-model2 <- glmmTMB(
-  tint ~ Emotion_Condition + Object_OSIQ_z + Spatial_OSIQ_z + ZVVIQ_TOTAL + ZMRT_TOTAL+(1 | ID),
-  family = nbinom2,
-  data = data,
-  na.action = na.exclude
-)
-summary(model2)
-
-# 4.1. Time with interactions
-model1 <- glmmTMB(
-  tint ~ Emotion_Condition + ZMRT_TOTAL + Spatial_OSIQ_z + (1 | ID),
-  family = nbinom2,
-  data = data,
-  na.action = na.exclude
-)
-summary(model1)
-
-model2 <- glmmTMB(
-  tint ~ Emotion_Condition *ZMRT_TOTAL + Emotion_Condition *Spatial_OSIQ_z + (1 | ID),
-  family = nbinom2,
-  data = data,
-  na.action = na.exclude
-)
-summary(model2)
-
-# 5. Place
-model1 <- glmmTMB(
-  plint ~ Emotion_Condition + ZMRT_TOTAL + Spatial_OSIQ_z + (1 | ID),
-  family = nbinom2,
-  data = data,
-  na.action = na.exclude
-)
-summary(model1)
-
-
-model2 <- glmmTMB(
-  plint ~ Emotion_Condition + Object_OSIQ_z + Spatial_OSIQ_z + ZVVIQ_TOTAL + ZMRT_TOTAL+(1 | ID),
-  family = nbinom2,
-  data = data,
-  na.action = na.exclude
-)
-summary(model2)
-
-# Now compare using anova()
-anova(model1, model2)
-AIC(model1, model2)
-
-# 5. Place with Interactions
-model1 <- glmmTMB(
-  plint ~ Emotion_Condition + ZMRT_TOTAL + Spatial_OSIQ_z + (1 | ID),
-  family = nbinom2,
-  data = data,
-  na.action = na.exclude
-)
-summary(model1)
-
-
-model2 <- glmmTMB(
-  plint ~ Emotion_Condition*Spatial_OSIQ_z + Emotion_Condition*ZMRT_TOTAL (1 | ID),
-  family = nbinom2,
-  data = data,
-  na.action = na.exclude
-)
-summary(model2)
-
-
-# Now compare using anova()
-anova(model1, model2)
-AIC(model1, model2)
-
-# 6. Thought
-model1 <- glmmTMB(
-  thoint ~ Emotion_Condition + ZMRT_TOTAL + Spatial_OSIQ_z + (1 | ID),
-  family = nbinom2,
-  data = data,
-  na.action = na.exclude
-)
-summary(model1)
-
-
-model2 <- glmmTMB(
-  thoint ~ Emotion_Condition + Object_OSIQ_z + Spatial_OSIQ_z + ZVVIQ_TOTAL + ZMRT_TOTAL+(1 | ID),
-  family = nbinom2,
-  data = data,
-  na.action = na.exclude
-)
-summary(model2)
 ###############################################################################
 
 # PHENOMENOLOGY MODELS with CLMM:
 
-
 # Random intercept for ID
+
 # 1. Vividness
 
+# BASELINE MODEL
 model_likert_null <- clmm(
   as.factor(Vividness) ~ Emotion_Condition +   (1|ID),
   data = data
@@ -859,271 +698,43 @@ pairwise_part <- contrast(em, method = "pairwise")
 print(pairwise_part)
 
 
+# MODEL 3 
+model_3 <- clmm(
+  as.factor(Vividness) ~ Emotion_Condition +  Object_OSIQ_z + ZVVIQ_TOTAL + (1|ID),
+  data = data)
+summary(model_3)
 
-anova(model_likert, model_likert_null)
+# Compare
+anova(model_3, model_likert_null)
 compare_performance
 
 
-model_likert <- clmm(
-  as.factor(Vividness) ~ Emotion_Condition +  Object_OSIQ_z + ZVVIQ_TOTAL + (1|ID),
-  data = data
-)
-summary(model_likert)
-
-
-model_likert1 <- clmm(
+# MODEL 4
+model_4 <- clmm(
   as.factor(Vividness) ~ Emotion_Condition +  Object_OSIQ_z + Spatial_OSIQ_z + ZVVIQ_TOTAL + ZMRT_TOTAL+(1|ID),
   data = data
 )
-summary(model_likert1)
+summary(model_4)
 
-anova(model_likert, model_likert2)
-AIC(model_likert, model_likert2)
-compare_performance(model_likert,model_likert2)
+# Compare
+anova(model_3, model_4)
+AIC(model_3, model_4)
+compare_performance(model_3, model_4)
+
 
 
 #1.1. Vividness with interactions
-model_likert2 <- clmm(
+# MODEL 5
+model_5 <- clmm(
   as.factor(Vividness) ~  Emotion_Condition*ZVVIQ_TOTAL +Emotion_Condition*Object_OSIQ_z  +(1|ID),
   data = data
 )
-summary(model_likert2)
+summary(model_5)
 
-anova(model_likert, model_likert2)
-AIC(model_likert, model_likert2)
-
-
-#multicollineraity check
-# Create interaction terms explicitly
-check_collinearity(model_likert)
-
-#############################################################
-# 2. Reliving
-model_likert <- clmm(
-  as.factor(Reliving) ~ Emotion_Condition +  Object_OSIQ_z + ZVVIQ_TOTAL + (1|ID),
-  data = data
-)
-summary(model_likert)
-
-model_likert2 <- clmm(
-  as.factor(Reliving) ~ Emotion_Condition +  Object_OSIQ_z + Spatial_OSIQ_z + ZVVIQ_TOTAL + ZMRT_TOTAL+(1|ID),
-  data = data
-)
-summary(model_likert2)
-
-anova(model_likert, model_likert2)
-AIC(model_likert, model_likert2)
-
-# 2.1. Reliving with Interactions
-model_likert <- clmm(
-  as.factor(Reliving) ~ Emotion_Condition +  Object_OSIQ_z + ZVVIQ_TOTAL + (1|ID),
-  data = data
-)
-summary(model_likert)
-
-model_likert2 <- clmm(
-  as.factor(Reliving) ~ Emotion_Condition*Object_OSIQ_z + ZVVIQ_TOTAL*Emotion_Condition +(1|ID),
-  data = data
-)
-summary(model_likert2)
-
-anova(model_likert, model_likert2)
-AIC(model_likert, model_likert2)
-
-# 3. Intensity
-model_likert <- clmm(
-  as.factor(Intensity) ~ Emotion_Condition +  Object_OSIQ_z + ZVVIQ_TOTAL + (1|ID),
-  data = data
-)
-summary(model_likert)
-
-model_likert2 <- clmm(
-  as.factor(Intensity) ~ Emotion_Condition +  Object_OSIQ_z + Spatial_OSIQ_z + ZVVIQ_TOTAL + ZMRT_TOTAL+(1|ID),
-  data = data
-)
-summary(model_likert2)
-
-anova(model_likert, model_likert2)
-AIC(model_likert, model_likert2)
-
-# 3.1. Intensity with Interactions
-model_likert <- clmm(
-  as.factor(Intensity) ~ Emotion_Condition +  Object_OSIQ_z + ZVVIQ_TOTAL + (1|ID),
-  data = data
-)
-summary(model_likert)
-
-model_likert2 <- clmm(
-  as.factor(Intensity) ~ Emotion_Condition*Object_OSIQ_z + ZVVIQ_TOTAL*Emotion_Condition +(1|ID),
-  data = data
-)
-summary(model_likert2)
-
-anova(model_likert, model_likert2)
-AIC(model_likert, model_likert2)
-
-# 4. Importance 
-model_likert <- clmm(
-  as.factor(Importance) ~ Emotion_Condition +  Object_OSIQ_z + ZVVIQ_TOTAL + (1|ID),
-  data = data
-)
-summary(model_likert)
-
-model_likert2 <- clmm(
-  as.factor(Importance) ~ Emotion_Condition +  Object_OSIQ_z + Spatial_OSIQ_z + ZVVIQ_TOTAL + ZMRT_TOTAL+(1|ID),
-  data = data
-)
-summary(model_likert2)
-
-anova(model_likert, model_likert2)
-AIC(model_likert, model_likert2)
-
-# 4.1. Importance with Interactions
-model_likert <- clmm(
-  as.factor(Importance) ~ Emotion_Condition +  Object_OSIQ_z + ZVVIQ_TOTAL + (1|ID),
-  data = data
-)
-summary(model_likert)
-
-model_likert2 <- clmm(
-  as.factor(Importance) ~ Emotion_Condition*Object_OSIQ_z + ZVVIQ_TOTAL*Emotion_Condition +(1|ID),
-  data = data
-)
-summary(model_likert2)
-
-anova(model_likert, model_likert2)
-AIC(model_likert, model_likert2)
-# maybe i should add spatial imagery as well 
+anova(model_3, model_5)
+AIC(model_3, model_5)
 
 
-# 5. MTT  
-model_likert <- clmm(
-  as.factor(MTT) ~ Emotion_Condition +  Object_OSIQ_z + ZVVIQ_TOTAL + (1|ID),
-  data = data
-)
-summary(model_likert)
-
-model_likert2 <- clmm(
-  as.factor(MTT) ~ Emotion_Condition +  Object_OSIQ_z + Spatial_OSIQ_z + ZVVIQ_TOTAL + ZMRT_TOTAL+(1|ID),
-  data = data
-)
-summary(model_likert2)
-
-anova(model_likert, model_likert2)
-AIC(model_likert, model_likert2)
-
-# 6. Visual  
-model_likert <- clmm(
-  as.factor(Visual) ~ Emotion_Condition +  Object_OSIQ_z + ZVVIQ_TOTAL + (1|ID),
-  data = data
-)
-summary(model_likert)
-
-model_likert2 <- clmm(
-  as.factor(Visual) ~ Emotion_Condition +  Object_OSIQ_z + Spatial_OSIQ_z + ZVVIQ_TOTAL + ZMRT_TOTAL+(1|ID),
-  data = data
-)
-summary(model_likert2)
-
-anova(model_likert, model_likert2)
-AIC(model_likert, model_likert2)
-
-
-# 7. Auditory  
-model_likert <- clmm(
-  as.factor(Auditory) ~ Emotion_Condition +  Object_OSIQ_z + ZVVIQ_TOTAL + (1|ID),
-  data = data
-)
-summary(model_likert)
-
-model_likert2 <- clmm(
-  as.factor(Auditory) ~ Emotion_Condition +  Object_OSIQ_z + Spatial_OSIQ_z + ZVVIQ_TOTAL + ZMRT_TOTAL+(1|ID),
-  data = data
-)
-summary(model_likert2)
-
-anova(model_likert, model_likert2)
-AIC(model_likert, model_likert2)
-
-# 7.1. Auditory with Interactions
-model_likert <- clmm(
-  as.factor(Auditory) ~ Emotion_Condition +  Object_OSIQ_z + ZVVIQ_TOTAL + (1|ID),
-  data = data
-)
-summary(model_likert)
-
-model_likert2 <- clmm(
-  as.factor(Auditory) ~ Emotion_Condition*Object_OSIQ_z + ZVVIQ_TOTAL*Emotion_Condition +(1|ID),
-  data = data
-)
-summary(model_likert2)
-
-anova(model_likert, model_likert2)
-AIC(model_likert, model_likert2)
-
-# 8. Odor-taste  
-model_likert <- clmm(
-  as.factor(Odortaste) ~ Emotion_Condition +  Object_OSIQ_z + ZVVIQ_TOTAL + (1|ID),
-  data = data
-)
-summary(model_likert)
-
-model_likert2 <- clmm(
-  as.factor(Odortaste) ~ Emotion_Condition +  Object_OSIQ_z + Spatial_OSIQ_z + ZVVIQ_TOTAL + ZMRT_TOTAL+(1|ID),
-  data = data
-)
-summary(model_likert2)
-
-anova(model_likert, model_likert2)
-AIC(model_likert, model_likert2)
-
-# 8.1. Odortaste with Interactions
-model_likert <- clmm(
-  as.factor(Odortaste) ~ Emotion_Condition +  Object_OSIQ_z + ZVVIQ_TOTAL + (1|ID),
-  data = data
-)
-summary(model_likert)
-
-model_likert2 <- clmm(
-  as.factor(Odortaste) ~  ZVVIQ_TOTAL*Emotion_Condition +(1|ID),
-  data = data
-)
-summary(model_likert2)
-
-anova(model_likert, model_likert2)
-AIC(model_likert, model_likert2)
-
-# 9. Tactile
-model_likert <- clmm(
-  as.factor(Tactile) ~ Emotion_Condition +  Object_OSIQ_z + ZVVIQ_TOTAL + (1|ID),
-  data = data
-)
-summary(model_likert)
-
-model_likert2 <- clmm(
-  as.factor(Tactile) ~ Emotion_Condition +  Object_OSIQ_z + Spatial_OSIQ_z + ZVVIQ_TOTAL + ZMRT_TOTAL+(1|ID),
-  data = data
-)
-summary(model_likert2)
-
-anova(model_likert, model_likert2)
-AIC(model_likert, model_likert2)
-
-# 9. Verbal
-model_likert <- clmm(
-  as.factor(Verbal) ~ Emotion_Condition +  Object_OSIQ_z + ZVVIQ_TOTAL + (1|ID),
-  data = data
-)
-summary(model_likert)
-
-model_likert2 <- clmm(
-  as.factor(Verbal) ~ Emotion_Condition +  Object_OSIQ_z + Spatial_OSIQ_z + ZVVIQ_TOTAL + ZMRT_TOTAL+(1|ID),
-  data = data
-)
-summary(model_likert2)
-
-anova(model_likert, model_likert2)
-AIC(model_likert, model_likert2)
 #############################################################################
 
 # POST HOC ANALYSIS
@@ -1141,8 +752,4 @@ pairs(em)
 # Bonferroni-adjusted comparisons
 pairs(em, adjust = "bonferroni")
 
-
-#PLOT THEM
-plot(em, comparisons = TRUE)
-interaction.plot(dataforSentimentParts_allrounds$part, dataforSentimentParts_allrounds$Group, dataforSentimentParts_allrounds$value)
 
