@@ -628,6 +628,9 @@ ggplot(data, aes(x = Emotion_Condition, y = Vividness, color = Emotion_Condition
   theme(legend.position = "none")
 
 
+####################################
+## MAIN ANALYSIS 
+####################################
 # 1. Internal Details
 
 # BASELINE MODEL (See in Appendix)
