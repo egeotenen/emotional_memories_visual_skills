@@ -9,7 +9,8 @@ install.packages("psych")
 install.packages('dplyr')
 install.packages("performance")
 install.packages("parameters")
-
+install.packages("readxl")
+install.packages("MASS")
 
 
 library(dplyr)
@@ -35,10 +36,11 @@ library(ggplot2)
 
 
 # IMPORT DATA
-data <- read_excel("data_osf.xlsx")
+library(readxl)
+data <- read_excel("OneDrive - ITU/Documents/GitHub/lowhigh_socialmedia_memory/emotional_memories_visual_skills/THESISDATA.xlsx")
 
 # Try things with filtered for excluding people who do not have internal details
-#data <- data[data$Internal_total != 0, ]
+data <- data[data$Internal_total != 0, ]
 
 
 
@@ -52,11 +54,22 @@ descdist(data$Internal_total)
 df_summary <- data %>%
   summarise(
     n = n(),
-    mean_valence = mean(Internal_total, na.rm = TRUE),
-    median_valence = median(Internal_total, na.rm = TRUE),
-    sd_valence = sd(Internal_total, na.rm = TRUE),
-    min_valence = min(Internal_total, na.rm = TRUE),
-    max_valence = max(Internal_total, na.rm = TRUE)
+    mean_ = mean(Internal_total, na.rm = TRUE),
+    median = median(Internal_total, na.rm = TRUE),
+    sd_ = sd(Internal_total, na.rm = TRUE),
+    min = min(Internal_total, na.rm = TRUE),
+    max = max(Internal_total, na.rm = TRUE)
+  )
+
+#Vividness
+df_summary <- data %>%
+  summarise(
+    n = n(),
+    mean_ = mean(Vividness, na.rm = TRUE),
+    median = median(Vividness, na.rm = TRUE),
+    sd_ = sd(Vividness, na.rm = TRUE),
+    min = min(Vividness, na.rm = TRUE),
+    max = max(Vividness, na.rm = TRUE)
   )
 
 print(df_summary)
@@ -68,6 +81,17 @@ describe(df_unique$Age)
 min(df_unique$Age)
 max(df_unique$Age)
 sd(df_unique$Age)
+
+
+df_unique$MRT_TOTAL <- as.numeric(df_unique$MRT_TOTAL)
+df_unique$Object_OSIQ_Factor12item <- as.numeric(gsub(",", ".", df_unique$Object_OSIQ_Factor12item, fixed = TRUE))
+df_unique$Spatial_OSIQ_Factor14item <- as.numeric(gsub(",", ".", df_unique$Spatial_OSIQ_Factor14item, fixed = TRUE))
+
+
+describe(df_unique$MRT_TOTAL)
+describe(df_unique$VVIQ_TOTAL)
+describe(df_unique$Object_OSIQ_Factor12item)
+describe(df_unique$Spatial_OSIQ_Factor14item)
 
 # Gender Check
 df_unique %>%
