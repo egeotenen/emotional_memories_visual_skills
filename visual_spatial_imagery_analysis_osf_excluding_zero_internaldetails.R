@@ -39,6 +39,16 @@ library(ggplot2)
 library(readxl)
 data <- read_excel("OneDrive - ITU/Documents/GitHub/lowhigh_socialmedia_memory/emotional_memories_visual_skills/THESISDATA.xlsx")
 
+# HURDLE MODEL FOR SENSITIVITY ANALYSIS
+hurdle <- glmmTMB(
+  Internal_total ~ Emotion_Condition + ZMRT_TOTAL + Spatial_OSIQ_z + (1 | ID),
+  ziformula = ~ Emotion_Condition + ZMRT_TOTAL + Spatial_OSIQ_z + (1 | ID),
+  family = truncated_nbinom2,
+  data = data
+)
+summary(hurdle)
+
+
 # Try things with filtered for excluding people who do not have internal details
 data <- data[data$Internal_total != 0, ]
 
