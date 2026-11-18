@@ -46,6 +46,7 @@ data1 <- read_excel("THESISDATA.xlsx")
 data <- data1[data1$Internal_total != 0, ]
 
 
+# Check vividness of data with zero internal details
 data_zero_only <- data1[data1$Internal_total == 0, ]
 
 df_summary <- data_zero_only %>%
