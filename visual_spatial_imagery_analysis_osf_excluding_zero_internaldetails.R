@@ -37,12 +37,29 @@ library(ggplot2)
 
 # IMPORT DATA
 library(readxl)
-data <- read_excel("OneDrive - ITU/Documents/GitHub/lowhigh_socialmedia_memory/emotional_memories_visual_skills/THESISDATA.xlsx")
+data1 <- read_excel("THESISDATA.xlsx")
+
+
+
 
 # Try things with filtered for excluding people who do not have internal details
-data <- data[data$Internal_total != 0, ]
+data <- data1[data1$Internal_total != 0, ]
 
 
+# Check vividness of data with zero internal details
+data_zero_only <- data1[data1$Internal_total == 0, ]
+
+df_summary <- data_zero_only %>%
+  summarise(
+    n = n(),
+    mean_ = mean(Vividness, na.rm = TRUE),
+    median = median(Vividness, na.rm = TRUE),
+    sd_ = sd(Vividness, na.rm = TRUE),
+    min = min(Vividness, na.rm = TRUE),
+    max = max(Vividness, na.rm = TRUE)
+  )
+
+print(df_summary)
 
 # CHECK DATA FIRST
 # Dependent Variables
@@ -778,3 +795,11 @@ pairs(em)
 pairs(em, adjust = "bonferroni")
 
 
+# HURDLE MODEL FOR SENSITIVITY ANALYSIS
+hurdle <- glmmTMB(
+  Internal_total ~ Emotion_Condition + ZMRT_TOTAL + Spatial_OSIQ_z + (1 | ID),
+  ziformula = ~ Emotion_Condition + ZMRT_TOTAL + Spatial_OSIQ_z + (1 | ID),
+  family = truncated_nbinom2,
+  data = data1
+)
+summary(hurdle)

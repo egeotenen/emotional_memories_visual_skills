@@ -648,6 +648,8 @@ model_null <- glmmTMB(
 summary(model_null)
 
 
+
+
 # MODEL 1 
 model1 <- glmmTMB(
   Internal_total ~ Emotion_Condition + ZMRT_TOTAL + Spatial_OSIQ_z + (1 | ID),
@@ -755,3 +757,11 @@ pairs(em)
 pairs(em, adjust = "bonferroni")
 
 
+# HURDLE MODEL FOR SENSITIVITY ANALYSIS
+hurdle <- glmmTMB(
+  Internal_total ~ Emotion_Condition + ZMRT_TOTAL + Spatial_OSIQ_z + (1 | ID),
+  ziformula = ~ Emotion_Condition + ZMRT_TOTAL + Spatial_OSIQ_z + (1 | ID),
+  family = truncated_nbinom2,
+  data = data
+)
+summary(hurdle)
