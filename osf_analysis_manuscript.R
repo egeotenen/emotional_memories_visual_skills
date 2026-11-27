@@ -132,6 +132,40 @@ data$Spatial_OSIQ_z <- as.numeric(scale(data$Spatial_OSIQ_Factor14item))
 participants <- data[!duplicated(data$ID), ]
 
 
+
+##### ZERO-EXCLUDED vs. INCLUDED COMPARISON
+# Try things with filtered for excluding people who do not have internal details
+# This part is reported to reviewers
+data_withoutzero <- data[data$Internal_total != 0, ]
+
+
+# Check vividness of data with zero internal details
+data_zero_only <- data[data$Internal_total == 0, ]
+
+df_summary <- data_zero_only %>%
+  summarise(
+    n = n(),
+    mean_ = mean(Vividness, na.rm = TRUE),
+    median = median(Vividness, na.rm = TRUE),
+    sd_ = sd(Vividness, na.rm = TRUE),
+    min = min(Vividness, na.rm = TRUE),
+    max = max(Vividness, na.rm = TRUE)
+  )
+
+print(df_summary)
+
+df_summary <- data_withoutzero %>%
+  summarise(
+    n = n(),
+    mean_ = mean(Vividness, na.rm = TRUE),
+    median = median(Vividness, na.rm = TRUE),
+    sd_ = sd(Vividness, na.rm = TRUE),
+    min = min(Vividness, na.rm = TRUE),
+    max = max(Vividness, na.rm = TRUE)
+  )
+
+print(df_summary)
+
 ###############################################################################
 # 3. PRELIMINARY ANALYSES
 ###############################################################################
