@@ -22,6 +22,10 @@ ls_id <- data %>%
   summarise(long_runs = mean(LS >= 8), LS = mean(LS), IRV = mean(IRV))
 
 summary(ls_id$LS)
+mean(ls_id$LS) # mean is 3.07
+# longruns is out of 6 memories, how many has give same answer more than 8 times 
+#0.667 is 4 out of 6 
+
 
 # Flag: Tukey outlier OR run of 8+ in at least half of memories
 cutoff <- quantile(ls_id$LS, .75) + 1.5 * IQR(ls_id$LS)

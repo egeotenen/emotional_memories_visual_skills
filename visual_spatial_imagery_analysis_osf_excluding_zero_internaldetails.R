@@ -40,25 +40,55 @@ library(readxl)
 data1 <- read_excel("THESISDATA.xlsx")
 
 
-# Longstring analysis to exclude careless participants in other Rcode.
+## REMOVE CARELESS ANSWERERS
+data <- read_excel("data_osf.xlsx")
+names(data) <- trimws(names(data))
 
-# Exclude them
-careless_ids <- c("20-HAN08.docx", "112-nil11.docx","18-sel04.docx")
+# Memory characteristics items (1-7), in survey order
+items <- c("Vividness", "Reliving", "Visual", "Auditory", "Odortaste", "Tactile",
+           "Verbal", "Access", "MTT", "Pos_Emo", "Neg_Emo", "Intensity",
+           "Importance", "Talk", "Observer")
 
-data <- data1 %>% filter(!ID %in% careless_ids)
+# Longest run of identical answers (Month_ago, between Talk and Observer, breaks the run)
+longstring <- function(x) max(rle(x[1:14])$lengths)
+
+data$LS  <- apply(data[items], 1, longstring)   # per memory
+data$IRV <- apply(data[items], 1, sd)           # response variability per memory
+
+# Per participant
+ls_id <- data %>%
+  group_by(ID) %>%
+  summarise(long_runs = mean(LS >= 8), LS = mean(LS), IRV = mean(IRV))
+
+summary(ls_id$LS)
+mean(ls_id$LS) # mean is 3.07
+# longruns is out of 6 memories, how many has give same answer more than 8 times 
+#0.667 is 4 out of 6 
+
+
+# Flag: Tukey outlier OR run of 8+ in at least half of memories
+cutoff <- quantile(ls_id$LS, .75) + 1.5 * IQR(ls_id$LS)
+ls_id %>% filter(LS > cutoff | long_runs >= .5) %>% arrange(desc(LS))
+
+# EXCLUDE (chosen after inspecting raw responses of flagged participants)
+careless_ids <- c("20-HAN08.docx", "112-nil11.docx", "18-sel04.docx")
+data <- data %>% filter(!ID %in% careless_ids)
+
 
 # check
-nrow(data)              # should be 658
-length(unique(data$ID)) # should be 113
+nrow(data)              # 
+length(unique(data$ID)) # 
 
+#############################
+# EXAMINE DATA WITHOUT ANY INTERNAL DETAILS
 
 
 # Try things with filtered for excluding people who do not have internal details
-data <- data1[data1$Internal_total != 0, ]
+data <- data[data$Internal_total != 0, ]
 
 
 # Check vividness of data with zero internal details
-data_zero_only <- data1[data1$Internal_total == 0, ]
+data_zero_only <- data[data$Internal_total == 0, ]
 
 df_summary <- data_zero_only %>%
   summarise(
@@ -85,6 +115,12 @@ df_summary <- data %>%
 
 print(df_summary)
 
+
+
+
+
+
+#############################
 # CHECK DATA FIRST
 # Dependent Variables
 data$Internal_total
