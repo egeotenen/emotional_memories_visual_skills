@@ -13,8 +13,8 @@ items <- c("Vividness", "Reliving", "Visual", "Auditory", "Odortaste", "Tactile"
            "Importance", "Talk", "Observer")
 
 # Per memory: longest run of identical answers and response variability
-data$LS  <- longstring(data[items])   # careless::longstring
-data$IRV <- irv(data[items])          # careless::irv (within-person SD)
+data$LS  <- careless::longstring(as.data.frame(data[mc_items]))
+data$IRV <- careless::irv(as.data.frame(data[mc_items]))
 
 # Per participant
 ls_id <- data %>%
@@ -29,6 +29,7 @@ mean(ls_id$LS); sd(ls_id$LS)                         # M = 3.12, SD = 1.02
 cutoff <- quantile(ls_id$LS, .75) + 1.5 * IQR(ls_id$LS)
 cutoff                                               # 4.50
 ls_id %>% filter(LS > cutoff) %>% arrange(desc(LS))  # 7 participants
+
 
 # EXCLUDE (chosen after inspecting raw responses of flagged participants)
 careless_ids <- c("20-HAN08.docx", "112-nil11.docx", "18-sel04.docx")
