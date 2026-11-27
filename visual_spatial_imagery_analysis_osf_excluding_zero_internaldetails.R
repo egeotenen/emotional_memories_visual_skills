@@ -32,13 +32,24 @@ library(psych)
 library(ordinal)
 library(coin)
 library(ggplot2)
-
+library(careless)
 
 
 # IMPORT DATA
 library(readxl)
 data1 <- read_excel("THESISDATA.xlsx")
 
+
+# Longstring analysis to exclude careless participants in other Rcode.
+
+# Exclude them
+careless_ids <- c("20-HAN08.docx", "112-nil11.docx","18-sel04.docx")
+
+data <- data1 %>% filter(!ID %in% careless_ids)
+
+# check
+nrow(data)              # should be 658
+length(unique(data$ID)) # should be 113
 
 
 
@@ -50,6 +61,19 @@ data <- data1[data1$Internal_total != 0, ]
 data_zero_only <- data1[data1$Internal_total == 0, ]
 
 df_summary <- data_zero_only %>%
+  summarise(
+    n = n(),
+    mean_ = mean(Vividness, na.rm = TRUE),
+    median = median(Vividness, na.rm = TRUE),
+    sd_ = sd(Vividness, na.rm = TRUE),
+    min = min(Vividness, na.rm = TRUE),
+    max = max(Vividness, na.rm = TRUE)
+  )
+
+print(df_summary)
+
+# With memories with more than one details
+df_summary <- data %>%
   summarise(
     n = n(),
     mean_ = mean(Vividness, na.rm = TRUE),
@@ -803,3 +827,4 @@ hurdle <- glmmTMB(
   data = data1
 )
 summary(hurdle)
+
