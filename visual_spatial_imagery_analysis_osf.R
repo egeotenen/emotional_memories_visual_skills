@@ -602,8 +602,8 @@ ggplot(data, aes(x = Emotion_Condition, y = Internal_total, color = Emotion_Cond
                     ymin = mean_internal - 1.96 * se,
                     ymax = mean_internal + 1.96 * se),
                 inherit.aes = FALSE, width = 0.1, color = "black") +
-  labs(title = "Mean Number of Episodic Details by Emotion Condition",
-       x = "Emotion Condition", y = "Episodic Details (Mean ± 95% CI)") +
+  labs(title = "Mean Number of Internal Details by Emotion Condition",
+       x = "Emotion Condition", y = "Internal Details (Mean ± 95% CI)") +
   theme_minimal(base_size = 13) +
   theme(legend.position = "none")
 
